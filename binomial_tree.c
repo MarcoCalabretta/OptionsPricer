@@ -18,13 +18,16 @@ double binomial_tree_expected_price(const struct stock_prices *s,
   double yield = get_yield(s);
   double cur = get_price(s);
   struct date *today = current_date();
-  double years_left = date_compare(get_expiry_date(o), today);
+  double years_left =
+      (double)date_compare(get_expiry_date(o), today) / DAYS_PER_YEAR;
   date_destroy(today);
+  // if the option expires today I don't really care, the option is worthless to me
+  if(years_left == 0) return 0;
   double dT = years_left / NUM_STEPS;
   double u = exp(v * sqrt(dT));
-  double p = (exp((R - yield) * dT / 100) - 1 / u) / (u - 1 / u);
+  double p = (exp((R - yield) * dT) - 1 / u) / (u - 1 / u);
   double values[NUM_STEPS + 1];
-  for (int i = NUM_STEPS; i > 0; i--) {
+  for (int i = NUM_STEPS; i >= 0; i--) {
     for (int j = 0; j <= i; j++) {
       if (i == NUM_STEPS) {
         values[j] = cur * pow(u, i - 2 * j) - get_strike_price(o);
@@ -33,8 +36,7 @@ double binomial_tree_expected_price(const struct stock_prices *s,
         if (values[j] < 0)
           values[j] = 0;
       } else {
-        values[j] = (p * values[j] + (1 - p) * values[j + 1]) *
-                    exp((R + 1) / 100 * dT * -1);
+        values[j] = (p * values[j] + (1 - p) * values[j + 1]) / pow(R, dT);
         if (is_american(o)) {
           double exercise_price = cur * pow(u, i - 2 * j) - get_strike_price(o);
           if (!is_call(o))

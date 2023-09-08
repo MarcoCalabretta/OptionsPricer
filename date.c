@@ -37,6 +37,10 @@ struct date *date_create(int day, int month, int year) {
     d->total_day += months[i - 1];
   }
   d->total_day += day;
+
+  // slighter additions
+  // leap years
+  d->total_day += year / 4;
   return d;
 }
 
