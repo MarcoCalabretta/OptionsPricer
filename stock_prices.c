@@ -21,7 +21,7 @@ static void ticker_download(const char *ticker) {
   strcat(command, ticker);
   strcat(command, "?period1=100000000&period2=1693872000&interval=1d&events="
                   "history&includeAdjustedClose=true\"");
-  //system((const char *)command);
+  system((const char *)command);
 }
 
 // assigns values to the current price in USD and the current div yield (1.03
@@ -31,12 +31,12 @@ static void cur_price_and_yield(const char *ticker, double *cur_yield,
   assert(ticker);
 
   // builds url and downloads it
-  // remove(tempname);
+  remove(tempname);
   char command[150] = "curl -o ";
   strcat(command, tempname);
   strcat(command, " https://www.marketwatch.com/investing/stock/");
   strcat(command, ticker);
-  //system(command);
+  system(command);
 
   FILE *fp = fopen(tempname, "r");
   bool file_ok = true;
@@ -51,12 +51,12 @@ static void cur_price_and_yield(const char *ticker, double *cur_yield,
   // "stock"
   if (!file_ok) {
     fclose(fp);
-    // remove(tempname);
+    remove(tempname);
     strcpy(command, "curl -o ");
     strcat(command, tempname);
     strcat(command, " https://www.marketwatch.com/investing/fund/");
     strcat(command, ticker);
-    //system(command);
+    system(command);
 
     fp = fopen(tempname, "r");
     file_ok = true;
@@ -118,7 +118,7 @@ static void cur_price_and_yield(const char *ticker, double *cur_yield,
   }
 
   fclose(fp);
-  // remove(tempname);
+  remove(tempname);
 }
 
 // a stock_prices struct that stores a lot of data about a stock's prices
@@ -173,7 +173,7 @@ struct stock_prices *stock_prices_create(const char *ticker) {
       ;
   }
   fclose(fp);
-  // remove(pricename);
+  remove(pricename);
   return s;
 }
 

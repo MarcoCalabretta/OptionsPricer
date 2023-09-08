@@ -47,7 +47,7 @@ struct options_chart *options_chart_create(const char *ticker) {
   strcat(command, " https://www.marketwatch.com/investing/stock/");
   strcat(command, ticker);
   strcat(command, "/options");
-  // system((const char *)command);
+  system((const char *)command);
 
   FILE *fp = fopen(tempname, "r");
   bool file_ok = true;
@@ -64,13 +64,13 @@ struct options_chart *options_chart_create(const char *ticker) {
     // generally fund options are european, this is just a guess
     american = false;
     fclose(fp);
-    // remove(tempname);
+    remove(tempname);
     strcpy(command, "curl -o ");
     strcat(command, tempname);
     strcat(command, " https://www.marketwatch.com/investing/fund/");
     strcat(command, ticker);
     strcat(command, "/options");
-    // system(command);
+    system(command);
 
     fp = fopen(tempname, "r");
     file_ok = true;
@@ -226,7 +226,7 @@ struct options_chart *options_chart_create(const char *ticker) {
     }
   }
   fclose(fp);
-  // remove(tempname);
+  remove(tempname);
   return oc;
 }
 
