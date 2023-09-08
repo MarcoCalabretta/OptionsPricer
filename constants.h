@@ -7,8 +7,4 @@ extern const int NUM_STEPS;
 
 // the risk-free interest rate
 extern const double R;
-
-// return values
-extern const int SUCCESS;
-extern const int FAIL;
 #endif
