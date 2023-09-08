@@ -20,11 +20,11 @@ struct stock_prices *stock_prices_create(const char *ticker);
 void *stock_prices_destroy(struct stock_prices *s);
 
 // gives an estimate for the volatility of s, for the black_scholes model
-double get_volatility(struct stock_prices *s);
+double get_volatility(const struct stock_prices *s);
 
 // returns the dividend yield of s, as a percentage, i.e. 5 for 5%
-double get_yield(struct stock_prices *s);
+double get_yield(const struct stock_prices *s);
 
 // returns the current price of s
-double get_price(struct stock_prices *s);
+double get_price(const struct stock_prices *s);
 #endif

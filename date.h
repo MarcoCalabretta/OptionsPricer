@@ -35,9 +35,9 @@ struct date *string_to_date(const char *s);
 // time: O(1)
 void date_destroy(struct date *d);
 
-// deep copies src to dest
+// deep copies src to dest and returns the new pointer to dest
 // NOTE: dest can be NULL
-void date_copy(struct date *dest, const struct date *src);
+struct date *date_copy(struct date *dest, const struct date *src);
 
 // returns the number of days between d1 and d2
 // result will be negative if d1 is earlier than d2, in a sense it returns d1 -

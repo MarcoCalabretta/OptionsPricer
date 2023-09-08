@@ -26,27 +26,27 @@ struct option *option_create();
 void option_destroy(struct option *o);
 
 // returns true if there are still options left in the chart, false otherwise
-bool options_left(struct options_chart *oc);
+bool options_left(const struct options_chart *oc);
 
 // reads the next option from oc and assigns the value to o
 // requires: options_left(oc) is true
-void options_next(struct options_chart *oc, struct option *o);
+void options_next( struct options_chart *oc, struct option *o);
 
 // returns the market price of o
-double get_market_price(struct option *o);
+double get_market_price(const struct option *o);
 
 // returns the strike price of o
-double get_strike_price(struct option *o);
+double get_strike_price(const struct option *o);
 
 // returns the ticker name of o
-const char *get_ticker(struct option *o);
+const char *get_ticker(const struct option *o);
 
 // returns the expiry date of o
-const struct date *get_expiry_date(struct option *o);
+const struct date *get_expiry_date(const struct option *o);
 
 // returns true if o is a call
-bool is_call(struct option *o);
+bool is_call(const struct option *o);
 
 // returns true if o is an american option
-bool is_american(struct option *o);
+bool is_american(const struct option *o);
 #endif

@@ -67,14 +67,14 @@ void date_destroy(struct date *d) {
   free(d);
 }
 
-// deep copies src to dest
-void date_copy(struct date *dest, const struct date *src){
-	assert(src);
-	if(dest){
-		date_destroy(dest);
-		dest = NULL;
-	}
-	dest = date_create(src->day, src->month, src->year);
+struct date *date_copy(struct date *dest, const struct date *src) {
+  assert(src);
+  if (dest) {
+    date_destroy(dest);
+    dest = NULL;
+  }
+  dest = date_create(src->day, src->month, src->year);
+  return dest;
 }
 
 int date_compare(const struct date *d1, const struct date *d2) {
@@ -113,15 +113,3 @@ bool future(struct date *d) {
   free(today);
   return diff > 0;
 }
-
-/*
-// uncomment to test
-int main() {
-  struct date *d = date_create(30, 7, 2023);
-  struct date *today = current_date();
-  int diff = date_compare(d, today);
-  char s[DATE_LENGTH];
-  date_string(d, s);
-  printf("diff is %d, day is %s", diff, s);
-}
-*/

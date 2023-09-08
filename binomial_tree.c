@@ -10,9 +10,10 @@
 // see binomial_tree.h
 
 // Returns the expected price of the option
-double binomial_tree_expected_price(struct option *o) {
+double binomial_tree_expected_price(const struct stock_prices *s,
+                                    const struct option *o) {
   assert(o);
-  struct stock_prices *s = stock_prices_create(get_ticker(o));
+  assert(s);
   double v = get_volatility(s);
   double yield = get_yield(s);
   double cur = get_price(s);
@@ -45,6 +46,5 @@ double binomial_tree_expected_price(struct option *o) {
       }
     }
   }
-  stock_prices_destroy(s);
   return values[0];
 }

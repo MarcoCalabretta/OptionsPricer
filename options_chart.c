@@ -89,7 +89,6 @@ struct options_chart *options_chart_create(const char *ticker) {
   const int MAX_LINE_LEN = 200;
   char line[MAX_LINE_LEN];
   const char *start_key = "                <div class=\"overflow--table\">";
-  fpos_t position;
   int start_keylen = strlen(start_key);
   int linelen = 0;
   bool diff = 0;
@@ -106,7 +105,6 @@ struct options_chart *options_chart_create(const char *ticker) {
     }
     if (!diff) {
       found = 1;
-      fgetpos(fp, &position);
     }
   }
 
@@ -114,11 +112,12 @@ struct options_chart *options_chart_create(const char *ticker) {
   const char *new_option_key = "                                               "
                                "         <div class=\"option__cell strike\">";
   const char *date_key = "                                        <th "
-                         "colspan=\" 3 \"><div class=\"option__heading\"><span "
+                         "colspan=\"3\"><div class=\"option__heading\"><span "
                          "class=\"text\">Expires ";
   // data to make the expiry date
-  char mon[3];
+  char mon[4] = "Aug";
   int month, day, year;
+  fpos_t position;
 
   int new_option_keylen = strlen(new_option_key);
   int date_keylen = strlen(date_key);
@@ -127,6 +126,7 @@ struct options_chart *options_chart_create(const char *ticker) {
   double strike_price;
   double market_price;
   while (!feof(fp)) {
+    fgetpos(fp, &position);
     fgets(line, MAX_LINE_LEN, fp);
     new_option_diff = 0;
     date_diff = 0;
@@ -149,17 +149,16 @@ struct options_chart *options_chart_create(const char *ticker) {
         oc->max_len *= 2;
         oc->ops = realloc(oc->ops, oc->max_len * sizeof(struct option *));
       }
-      // TODO find data about options
-      scanf("%lf", &strike_price);
+      strike_price = strtod((const char *)(line + new_option_keylen), NULL);
 
       // fills in call option
       // NOTE: this is completely dependent on how marketwatch structures their
       // html
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 3; i++) {
         while (fgetc(fp) != '>')
           ;
       }
-      scanf("%lf", &market_price);
+      fscanf(fp, "%lf", &market_price);
       (oc->ops)[oc->len - 2] = malloc(sizeof(struct option));
       struct option *o = (oc->ops)[oc->len - 2];
       o->american = american;
@@ -180,20 +179,26 @@ struct options_chart *options_chart_create(const char *ticker) {
         while (fgetc(fp) != '>')
           ;
       }
-      scanf("%lf", &market_price);
+      fscanf(fp, "%lf", &market_price);
       (oc->ops)[oc->len - 1] = malloc(sizeof(struct option));
-      o = (oc->ops)[oc->len - 2];
+      o = (oc->ops)[oc->len - 1];
       o->american = american;
       o->call = false;
       o->expiry_date = date_create(day, month, year);
       o->strike_price = strike_price;
       o->market_price = market_price;
       o->ticker = ticker;
-
     } else if (!date_diff) {
-      scanf("%s", mon);
-      scanf(" %d", day);
-      scanf(", %d", year);
+      fsetpos(fp, &position);
+      for (int i = 0; i < 3; i++) {
+        while (fgetc(fp) != '>')
+          ;
+      }
+      while (fgetc(fp) != ' ')
+        ;
+      fscanf(fp, "%s", mon);
+      fscanf(fp, " %d", &day);
+      fscanf(fp, ", %d", &year);
       if (!strcmp((const char *)mon, "Jan"))
         month = 1;
       else if (!strcmp((const char *)mon, "Feb"))
@@ -220,10 +225,8 @@ struct options_chart *options_chart_create(const char *ticker) {
         month = 12;
     }
   }
-  fsetpos(fp, &position);
-
   fclose(fp);
-
+  remove(tempname);
   return oc;
 }
 
@@ -257,7 +260,7 @@ void option_destroy(struct option *o) {
 }
 
 // returns true if there are still options left in the chart, false otherwise
-bool options_left(struct options_chart *oc) {
+bool options_left(const struct options_chart *oc) {
   assert(oc);
   return (oc->cur_option < oc->len);
 }
@@ -272,40 +275,41 @@ void options_next(struct options_chart *oc, struct option *o) {
   o->market_price = (cur)->market_price;
   o->call = (cur)->call;
   o->american = (cur)->american;
-  date_copy(o->expiry_date, cur->expiry_date);
+  o->expiry_date = date_copy(o->expiry_date, cur->expiry_date);
+  (oc->cur_option)++;
 }
 
-double get_market_price(struct option *o) {
+double get_market_price(const struct option *o) {
   assert(o);
   return o->market_price;
 }
 
 // returns the strike price of o
-double get_strike_price(struct option *o) {
+double get_strike_price(const struct option *o) {
   assert(o);
   return o->strike_price;
 }
 
 // returns the ticker name of o
-const char *get_ticker(struct option *o) {
+const char *get_ticker(const struct option *o) {
   assert(o);
   return o->ticker;
 }
 
 // returns the expiry date of o
-const struct date *get_expiry_date(struct option *o) {
+const struct date *get_expiry_date(const struct option *o) {
   assert(o);
   return o->expiry_date;
 }
 
 // returns true if o is a call
-bool is_call(struct option *o) {
+bool is_call(const struct option *o) {
   assert(o);
   return o->call;
 }
 
 // returns true if o is an american option
-bool is_american(struct option *o) {
+bool is_american(const struct option *o) {
   assert(o);
   return o->american;
 }
