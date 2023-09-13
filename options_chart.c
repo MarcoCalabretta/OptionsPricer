@@ -22,13 +22,11 @@ struct option {
   struct date *expiry_date;
   double strike_price;
   double market_price;
+  int volume;
   bool call;
   bool american;
 };
 
-// creates an options chart for ticker and returns a pointer to it
-// effects: allocates heap memory, client must call
-// options_destroy
 struct options_chart *options_chart_create(const char *ticker) {
   assert(ticker);
   struct options_chart *oc = malloc(sizeof(struct options_chart));
@@ -42,7 +40,7 @@ struct options_chart *options_chart_create(const char *ticker) {
   // download shit into file
   bool american = true;
   char command[100];
-  strcpy(command, "curl -o ");
+  strcpy(command, "curl -s -o ");
   strcat(command, tempname);
   strcat(command, " https://www.marketwatch.com/investing/stock/");
   strcat(command, ticker);
@@ -65,7 +63,7 @@ struct options_chart *options_chart_create(const char *ticker) {
     american = false;
     fclose(fp);
     remove(tempname);
-    strcpy(command, "curl -o ");
+    strcpy(command, "curl -s -o ");
     strcat(command, tempname);
     strcat(command, " https://www.marketwatch.com/investing/fund/");
     strcat(command, ticker);
@@ -125,6 +123,7 @@ struct options_chart *options_chart_create(const char *ticker) {
   bool date_diff = 0;
   double strike_price;
   double market_price;
+  int volume;
   while (!feof(fp)) {
     fgetpos(fp, &position);
     fgets(line, MAX_LINE_LEN, fp);
@@ -159,6 +158,15 @@ struct options_chart *options_chart_create(const char *ticker) {
           ;
       }
       fscanf(fp, "%lf", &market_price);
+      for (int i = 0; i < 4; i++) {
+        while (fgetc(fp) != '\n')
+          ;
+      }
+      for (int i = 0; i < 2; i++) {
+        while (fgetc(fp) != '>')
+          ;
+      }
+      fscanf(fp, "%d", &volume);
       (oc->ops)[oc->len - 2] = malloc(sizeof(struct option));
       struct option *o = (oc->ops)[oc->len - 2];
       o->american = american;
@@ -167,11 +175,12 @@ struct options_chart *options_chart_create(const char *ticker) {
       o->strike_price = strike_price;
       o->market_price = market_price;
       o->ticker = ticker;
+      o->volume = volume;
 
       // fills in put option
       // NOTE: this is completely dependent on how marketwatch structures their
       // html
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < 3; i++) {
         while (fgetc(fp) != '\n')
           ;
       }
@@ -180,6 +189,15 @@ struct options_chart *options_chart_create(const char *ticker) {
           ;
       }
       fscanf(fp, "%lf", &market_price);
+      for (int i = 0; i < 4; i++) {
+        while (fgetc(fp) != '\n')
+          ;
+      }
+      for (int i = 0; i < 2; i++) {
+        while (fgetc(fp) != '>')
+          ;
+      }
+      fscanf(fp, "%d", &volume);
       (oc->ops)[oc->len - 1] = malloc(sizeof(struct option));
       o = (oc->ops)[oc->len - 1];
       o->american = american;
@@ -188,6 +206,7 @@ struct options_chart *options_chart_create(const char *ticker) {
       o->strike_price = strike_price;
       o->market_price = market_price;
       o->ticker = ticker;
+      o->volume = volume;
     } else if (!date_diff) {
       fsetpos(fp, &position);
       for (int i = 0; i < 3; i++) {
@@ -230,7 +249,6 @@ struct options_chart *options_chart_create(const char *ticker) {
   return oc;
 }
 
-// destroys all memory associated with oc
 void options_chart_destroy(struct options_chart *oc) {
   assert(oc);
   for (int i = 0; i < oc->len; i++)
@@ -239,33 +257,29 @@ void options_chart_destroy(struct options_chart *oc) {
   free(oc);
 }
 
-// creates an option and returns an option to it
-// effects: allocates heap memory, client must call option_destroy
 struct option *option_create() {
   struct option *o = malloc(sizeof(struct option));
   o->ticker = NULL;
   o->expiry_date = current_date();
   o->strike_price = 0;
   o->market_price = 0;
+  o->volume = 0;
   o->call = false;
   o->american = false;
   return o;
 }
 
-// destroys all memory associated with 0
 void option_destroy(struct option *o) {
   assert(o);
   date_destroy(o->expiry_date);
   free(o);
 }
 
-// returns true if there are still options left in the chart, false otherwise
 bool options_left(const struct options_chart *oc) {
   assert(oc);
   return (oc->cur_option < oc->len);
 }
 
-// reads the next option from oc and assigns the value to o
 void options_next(struct options_chart *oc, struct option *o) {
   assert(oc);
   assert(o);
@@ -273,6 +287,7 @@ void options_next(struct options_chart *oc, struct option *o) {
   o->ticker = (cur)->ticker;
   o->strike_price = (cur)->strike_price;
   o->market_price = (cur)->market_price;
+  o->volume = (cur)->volume;
   o->call = (cur)->call;
   o->american = (cur)->american;
   o->expiry_date = date_copy(o->expiry_date, cur->expiry_date);
@@ -284,31 +299,31 @@ double get_market_price(const struct option *o) {
   return o->market_price;
 }
 
-// returns the strike price of o
 double get_strike_price(const struct option *o) {
   assert(o);
   return o->strike_price;
 }
 
-// returns the ticker name of o
+int get_volume(const struct option *o) {
+  assert(o);
+  return o->volume;
+}
+
 const char *get_ticker(const struct option *o) {
   assert(o);
   return o->ticker;
 }
 
-// returns the expiry date of o
 const struct date *get_expiry_date(const struct option *o) {
   assert(o);
   return o->expiry_date;
 }
 
-// returns true if o is a call
 bool is_call(const struct option *o) {
   assert(o);
   return o->call;
 }
 
-// returns true if o is an american option
 bool is_american(const struct option *o) {
   assert(o);
   return o->american;

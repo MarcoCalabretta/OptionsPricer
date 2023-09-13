@@ -30,13 +30,16 @@ bool options_left(const struct options_chart *oc);
 
 // reads the next option from oc and assigns the value to o
 // requires: options_left(oc) is true
-void options_next( struct options_chart *oc, struct option *o);
+void options_next(struct options_chart *oc, struct option *o);
 
 // returns the market price of o
 double get_market_price(const struct option *o);
 
 // returns the strike price of o
 double get_strike_price(const struct option *o);
+
+// returns the trading volume of o
+int get_volume(const struct option *o);
 
 // returns the ticker name of o
 const char *get_ticker(const struct option *o);

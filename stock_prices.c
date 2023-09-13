@@ -15,7 +15,7 @@ static const char *pricename = "tempprice.txt";
 static void ticker_download(const char *ticker) {
   assert(ticker);
   char command[1000];
-  strcpy(command, "curl -o ");
+  strcpy(command, "curl -s -o ");
   strcat(command, pricename);
   strcat(command, " \"https://query1.finance.yahoo.com/v7/finance/download/");
   strcat(command, ticker);
@@ -32,7 +32,7 @@ static void cur_price_and_yield(const char *ticker, double *cur_yield,
 
   // builds url and downloads it
   remove(tempname);
-  char command[150] = "curl -o ";
+  char command[150] = "curl -s -o ";
   strcat(command, tempname);
   strcat(command, " https://www.marketwatch.com/investing/stock/");
   strcat(command, ticker);
@@ -52,7 +52,7 @@ static void cur_price_and_yield(const char *ticker, double *cur_yield,
   if (!file_ok) {
     fclose(fp);
     remove(tempname);
-    strcpy(command, "curl -o ");
+    strcpy(command, "curl -s -o ");
     strcat(command, tempname);
     strcat(command, " https://www.marketwatch.com/investing/fund/");
     strcat(command, ticker);
