@@ -119,12 +119,12 @@ int main() {
 
         // some options will show as a $0 market price because there's no
         // trades. We don't want to look at those
-        if (get_market_price(o) && get_volume(o) > 10) {
+        double moneyness = get_strike_price(o) / get_price(s);
+        if (get_market_price(o) && get_volume(o) > 10 && moneyness < 1.05 &&
+            moneyness > 0.95) {
           model_price = binomial_tree_expected_price(s, o);
-          double moneyness = get_strike_price(o) / get_price(s);
           // here, insert filters to decide which options you want to see.
-          if ((model_price - get_market_price(o)) > 0.05 &&
-                          moneyness < 1.05 && moneyness > 0.95) {
+          if ((model_price - get_market_price(o)) > 0.05) {
             date_string(get_expiry_date(o), date);
             fprintf(fp, "%s,%s,", get_ticker(o), (const char *)date);
             if (is_american(o))
