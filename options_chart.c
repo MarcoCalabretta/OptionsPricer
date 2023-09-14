@@ -9,6 +9,16 @@
 // see options_chart.h for documentation
 static const char *tempname = "optemp.txt";
 
+// it's like fgetc(fp), but doesn't move the file pointer
+static char fgetc_inplace(FILE *fp) {
+  assert(fp);
+  fpos_t p;
+  fgetpos(fp, &p);
+  char c = fgetc(fp);
+  fsetpos(fp, &p);
+  return c;
+}
+
 struct options_chart {
   int len;
   int max_len;
@@ -143,6 +153,8 @@ struct options_chart *options_chart_create(const char *ticker) {
       }
     }
     if (!new_option_diff) {
+      bool blank_option = false;
+      struct option *o;
       oc->len += 2;
       while (oc->len >= oc->max_len) {
         oc->max_len *= 2;
@@ -153,11 +165,6 @@ struct options_chart *options_chart_create(const char *ticker) {
       // fills in call option
       // NOTE: this is completely dependent on how marketwatch structures their
       // html
-      for (int i = 0; i < 3; i++) {
-        while (fgetc(fp) != '>')
-          ;
-      }
-      fscanf(fp, "%lf", &market_price);
       for (int i = 0; i < 4; i++) {
         while (fgetc(fp) != '\n')
           ;
@@ -166,21 +173,34 @@ struct options_chart *options_chart_create(const char *ticker) {
         while (fgetc(fp) != '>')
           ;
       }
+      blank_option = (fgetc_inplace(fp) == '<');
+      fscanf(fp, "%lf", &market_price);
+      for (int i = 0; i < 1; i++) {
+        while (fgetc(fp) != '\n')
+          ;
+      }
+      for (int i = 0; i < 2; i++) {
+        while (fgetc(fp) != '>')
+          ;
+      }
       fscanf(fp, "%d", &volume);
-      (oc->ops)[oc->len - 2] = malloc(sizeof(struct option));
-      struct option *o = (oc->ops)[oc->len - 2];
-      o->american = american;
-      o->call = true;
-      o->expiry_date = date_create(day, month, year);
-      o->strike_price = strike_price;
-      o->market_price = market_price;
-      o->ticker = ticker;
-      o->volume = volume;
+      if (!blank_option) {
+        (oc->ops)[oc->len - 2] = malloc(sizeof(struct option));
+        o = (oc->ops)[oc->len - 2];
+        o->american = american;
+        o->call = true;
+        o->expiry_date = date_create(day, month, year);
+        o->strike_price = strike_price;
+        o->market_price = market_price;
+        o->ticker = ticker;
+        o->volume = volume;
+      } else
+        oc->len--;
 
       // fills in put option
       // NOTE: this is completely dependent on how marketwatch structures their
       // html
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < 6; i++) {
         while (fgetc(fp) != '\n')
           ;
       }
@@ -188,8 +208,9 @@ struct options_chart *options_chart_create(const char *ticker) {
         while (fgetc(fp) != '>')
           ;
       }
+      blank_option = (fgetc_inplace(fp) == '<');
       fscanf(fp, "%lf", &market_price);
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 1; i++) {
         while (fgetc(fp) != '\n')
           ;
       }
@@ -198,15 +219,18 @@ struct options_chart *options_chart_create(const char *ticker) {
           ;
       }
       fscanf(fp, "%d", &volume);
-      (oc->ops)[oc->len - 1] = malloc(sizeof(struct option));
-      o = (oc->ops)[oc->len - 1];
-      o->american = american;
-      o->call = false;
-      o->expiry_date = date_create(day, month, year);
-      o->strike_price = strike_price;
-      o->market_price = market_price;
-      o->ticker = ticker;
-      o->volume = volume;
+      if (!blank_option) {
+        (oc->ops)[oc->len - 1] = malloc(sizeof(struct option));
+        o = (oc->ops)[oc->len - 1];
+        o->american = american;
+        o->call = false;
+        o->expiry_date = date_create(day, month, year);
+        o->strike_price = strike_price;
+        o->market_price = market_price;
+        o->ticker = ticker;
+        o->volume = volume;
+      } else
+        oc->len--;
     } else if (!date_diff) {
       fsetpos(fp, &position);
       for (int i = 0; i < 3; i++) {

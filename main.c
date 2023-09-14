@@ -32,6 +32,10 @@ int main() {
   printf("input 1 to update prices, 2 to update options: ");
   scanf("%d", &mode);
   if (mode == 1) {
+    char prev_ticker[20];
+    prev_ticker[0] = '\0';
+    double cur_price = 0;
+    struct stock_prices *s = NULL;
     FILE *fp = fopen(filename, "r");
     FILE *temp = fopen(tempname, "w");
     struct date *d = current_date();
@@ -68,22 +72,24 @@ int main() {
       }
       fputc(',', temp);
       date[count] = '\0';
-      if (strcmp((const char *)date, today) == 0) {
-        struct stock_prices *s = stock_prices_create(ticker);
-        double cur_price = get_price(s);
+      if (strcmp(ticker, prev_ticker)) {
+        s = stock_prices_create(ticker);
+        cur_price = get_price(s);
         stock_prices_destroy(s);
         s = NULL;
-        count = 0;
-        while (count < 2) {
-          c = fgetc(fp);
-          fputc(c, temp);
-          if (c == ',')
-            count++;
-        }
-        fprintf(temp, "%.2lf,", cur_price);
-        while (fgetc(fp) != ',')
-          ;
+        strcpy(prev_ticker, ticker);
+        printf("%s\n", ticker);
       }
+      count = 0;
+      while (count < 2) {
+        c = fgetc(fp);
+        fputc(c, temp);
+        if (c == ',')
+          count++;
+      }
+      fprintf(temp, "%.2lf,", cur_price);
+      while (fgetc(fp) != ',')
+        ;
       while (c != '\n') {
         c = fgetc(fp);
         fputc(c, temp);
@@ -113,12 +119,13 @@ int main() {
 
         // some options will show as a $0 market price because there's no
         // trades. We don't want to look at those
-        if (get_market_price(o) && get_volume(o)) {
+        if (get_market_price(o) && get_volume(o) > 10) {
           model_price = binomial_tree_expected_price(s, o);
           double moneyness = get_strike_price(o) / get_price(s);
           // here, insert filters to decide which options you want to see.
-          if (model_price > get_market_price(o) && moneyness < 1.05 &&
-              moneyness > 0.95) {
+          if ((model_price - get_market_price(o)) > 0.05 &&
+                          moneyness < 1.05 && moneyness > 0.95) {
+            date_string(get_expiry_date(o), date);
             fprintf(fp, "%s,%s,", get_ticker(o), (const char *)date);
             if (is_american(o))
               printf("American ");
@@ -131,7 +138,6 @@ int main() {
               printf("put ");
               fprintf(fp, "Put,");
             }
-            date_string(get_expiry_date(o), date);
             printf("option on %s with strike price $%.2lf and expiry date "
                    "%s.\nmodel "
                    "price is $%.2lf and market price is $%.2lf. Volume is %d\n",
